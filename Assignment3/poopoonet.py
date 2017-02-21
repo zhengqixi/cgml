@@ -1,7 +1,7 @@
 import tensorflow.contrib.slim as slim
 import tensorflow as tf
 import numpy as np
-import os
+import datetime
 class poopoonet:
 
     def __init__(self):
@@ -13,26 +13,27 @@ class poopoonet:
         self.inputs = tf.placeholder(tf.float32, shape=[1, input_shape[0], input_shape[1], input_shape[2]], name='input')
         self.num_output = num_output
         self.input_shape = input_shape
+        self.keep_prob = tf.placeholder(tf.float32)
         with slim.arg_scope([slim.layers.convolution, slim.layers.fully_connected],
                             weights_initializer=tf.contrib.layers.xavier_initializer(),
                             weights_regularizer=slim.l2_regularizer(0.5)):
-            net = slim.layers.convolution(self.inputs, num_outputs=50, kernel_size=3, scope='conv1')
+            net = slim.layers.convolution(self.inputs, num_outputs=15, kernel_size=3, scope='conv1')
             net = slim.layers.max_pool2d(net, 3, scope='pool1')
-            net = slim.layers.convolution(net, num_outputs=30, kernel_size= 2, stride=1,scope='conv2')
-            net = slim.layers.max_pool2d(net, 2, stride=2, scope='pool2')
-            net = slim.layers.convolution(self.inputs, num_outputs=15, kernel_size=3, scope='conv3')
+            net = slim.layers.convolution(net, num_outputs=20, kernel_size= 2, stride=1,scope='conv2')
+            net = slim.layers.max_pool2d(net, 2, stride=1, scope='pool2')
             net = slim.layers.flatten(net, scope='flat')
-            net = slim.layers.fully_connected(net, 100)
-            net = slim.layers.fully_connected(net, 50)
+            net = slim.layers.fully_connected(net, 256)
+            net = slim.layers.dropout(net, keep_prob=self.keep_prob)
+            net = slim.layers.fully_connected(net, 128)
             net = slim.layers.fully_connected(net, num_output, activation_fn=None, weights_regularizer=None)
             self.net = net
 
-    def train_model(self, learning_rate, train_data, validation_data, validation_epoch, outdir=None):
+    def train_model(self, learning_rate, keep_prob, train_data, validation_data, validation_epoch, outdir=None):
         self.labels = tf.placeholder(tf.float32, shape=[1, self.num_output])
         predict_loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.net, labels=self.labels)
         weight_loss = tf.reduce_sum(tf.losses.get_regularization_losses())
         total_loss = predict_loss + weight_loss
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
         self.trainer = slim.learning.create_train_op(total_loss, optimizer)
         self.sess.run(tf.global_variables_initializer())
         batch_image, batch_label = self.get_batch(train_data)
@@ -43,13 +44,14 @@ class poopoonet:
         validation_accuracy = []
         validation_epoch_time= []
         for image, label in zip(batch_image, batch_label):
-            _, loss = self.sess.run([self.trainer, total_loss], feed_dict={self.inputs:image, self.labels:label})
+            _, loss = self.sess.run([self.trainer, total_loss], feed_dict={self.inputs:image, self.labels:label, self.keep_prob:keep_prob})
             losses_vector.append(float(loss))
             epoch_vector.append(epoch)
             if epoch%validation_epoch == 0:
                 predictions = self.infer_model(validation_data)
                 validation_accuracy.append(self.accuracy(predictions, validation_data['labels']))
                 validation_epoch_time.append(epoch)
+                print("Validation at : ", datetime.datetime.now(), "epoch ", epoch, "with accuracy ", validation_accuracy[len(validation_accuracy)-1])
             epoch += 1
 
         return epoch_vector, losses_vector, validation_epoch_time, validation_accuracy
@@ -75,6 +77,6 @@ class poopoonet:
         batch_images, batch_labels = self.get_batch(data)
         predictions = []
         for image, label in zip(batch_images, batch_labels):
-             predictions.append(self.sess.run(tf.nn.softmax(logits=self.net), feed_dict={self.inputs:image})[0])
+             predictions.append(self.sess.run(tf.nn.softmax(logits=self.net), feed_dict={self.inputs:image, self.keep_prob:1.0})[0])
 
         return predictions
