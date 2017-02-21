@@ -11,7 +11,7 @@ validate_dict = {'images':validate.images, 'labels':validate.labels}
 test_dict = {'images':test.images, 'labels':test.labels}
 net = poopoonet()
 net.build_model([28, 28, 1], 10)
-epoch, losses, validation_epoch, validation_accuracy = net.train_model(0.005, train_data=train_dict, validation_data=validate_dict, validation_epoch=5000, outdir="mnist_logdir")
+epoch, losses, validation_epoch, validation_accuracy = net.train_model(0.0005, train_data=train_dict, validation_data=validate_dict, validation_epoch=5000, outdir="mnist_logdir")
 predictions = net.infer_model(test_dict)
 total_accuracy= net.accuracy(predictions, test.labels)
 
