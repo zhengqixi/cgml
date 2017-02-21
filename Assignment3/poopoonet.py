@@ -2,15 +2,17 @@ import tensorflow.contrib.slim as slim
 import tensorflow as tf
 import numpy as np
 import datetime
-class poopoonet:
 
+
+class poopoonet:
     def __init__(self):
         self.sess = tf.Session()
 
     def build_model(self, input_shape, num_output):
-        #shape: [dimension1, dimension2, channels]
-        #Too hard to do minibatch everything gonna be online cuz that's superior anyway
-        self.inputs = tf.placeholder(tf.float32, shape=[1, input_shape[0], input_shape[1], input_shape[2]], name='input')
+        # shape: [dimension1, dimension2, channels]
+        # Too hard to do minibatch everything gonna be online cuz that's superior anyway
+        self.inputs = tf.placeholder(tf.float32, shape=[1, input_shape[0], input_shape[1], input_shape[2]],
+                                     name='input')
         self.num_output = num_output
         self.input_shape = input_shape
         self.keep_prob = tf.placeholder(tf.float32)
@@ -19,7 +21,7 @@ class poopoonet:
                             weights_regularizer=slim.l2_regularizer(0.5)):
             net = slim.layers.convolution(self.inputs, num_outputs=15, kernel_size=3, scope='conv1')
             net = slim.layers.max_pool2d(net, 3, scope='pool1')
-            net = slim.layers.convolution(net, num_outputs=20, kernel_size= 2, stride=1,scope='conv2')
+            net = slim.layers.convolution(net, num_outputs=20, kernel_size=2, stride=1, scope='conv2')
             net = slim.layers.max_pool2d(net, 2, stride=1, scope='pool2')
             net = slim.layers.flatten(net, scope='flat')
             net = slim.layers.fully_connected(net, 256)
@@ -42,16 +44,18 @@ class poopoonet:
         losses_vector = []
         epoch_vector = []
         validation_accuracy = []
-        validation_epoch_time= []
+        validation_epoch_time = []
         for image, label in zip(batch_image, batch_label):
-            _, loss = self.sess.run([self.trainer, total_loss], feed_dict={self.inputs:image, self.labels:label, self.keep_prob:keep_prob})
+            _, loss = self.sess.run([self.trainer, total_loss],
+                                    feed_dict={self.inputs: image, self.labels: label, self.keep_prob: keep_prob})
             losses_vector.append(float(loss))
             epoch_vector.append(epoch)
-            if epoch%validation_epoch == 0:
+            if epoch % validation_epoch == 0:
                 predictions = self.infer_model(validation_data)
                 validation_accuracy.append(self.accuracy(predictions, validation_data['labels']))
                 validation_epoch_time.append(epoch)
-                print("Validation at : ", datetime.datetime.now(), "epoch ", epoch, "with accuracy ", validation_accuracy[len(validation_accuracy)-1])
+                print("Validation at : ", datetime.datetime.now(), "epoch ", epoch, "with accuracy ",
+                      validation_accuracy[len(validation_accuracy) - 1])
             epoch += 1
 
         return epoch_vector, losses_vector, validation_epoch_time, validation_accuracy
@@ -71,12 +75,13 @@ class poopoonet:
         for prediction, label in zip(predictions, labels):
             if np.argmax(prediction) == np.argmax(label):
                 num_correct += 1
-        return num_correct/num_total
+        return num_correct / num_total
 
     def infer_model(self, data):
         batch_images, batch_labels = self.get_batch(data)
         predictions = []
         for image, label in zip(batch_images, batch_labels):
-             predictions.append(self.sess.run(tf.nn.softmax(logits=self.net), feed_dict={self.inputs:image, self.keep_prob:1.0})[0])
+            predictions.append(
+                self.sess.run(tf.nn.softmax(logits=self.net), feed_dict={self.inputs: image, self.keep_prob: 1.0})[0])
 
         return predictions
