@@ -10,11 +10,13 @@ test = mnist[2]
 train_dict = {'images': train.images, 'labels': train.labels}
 validate_dict = {'images': validate.images, 'labels': validate.labels}
 test_dict = {'images': test.images, 'labels': test.labels}
-net = poopoonet()
-net.build_model([28, 28, 1], 10)
-epoch, losses, validation_epoch, validation_accuracy = net.train_model(0.003, train_data=train_dict, keep_prob=0.50,
+net = poopoonet([28, 28, 1], 10)
+epoch, losses, validation_epoch, validation_accuracy = net.train_model(0.003, train_data=train_dict, keep_prob=1.0,
+                                                                       train_epoch=500,
+                                                                       batch_size=128,
                                                                        validation_data=validate_dict,
-                                                                       validation_epoch=5000, outdir="mnist_logdir")
+                                                                       validation_epoch=50,
+                                                                       outdir="mnist_logdir/model.ckpt")
 predictions = net.infer_model(test_dict)
 total_accuracy = net.accuracy(predictions, test.labels)
 
